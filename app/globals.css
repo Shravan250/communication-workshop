@@ -152,7 +152,7 @@
 
   /* Editor Container */
   .editor-container {
-    @apply my-5 mx-auto rounded-sm max-w-150 text-black relative leading-5 font-normal text-left rounded-t-lg;
+    @apply my-5 mx-auto rounded-sm w-full text-black relative leading-5 font-normal text-left rounded-t-lg;
   }
 
   .editor-inner {
@@ -160,7 +160,7 @@
   }
 
   .editor-input {
-    @apply min-h-37.5 resize-none text-[15px] relative outline-none p-[15px_10px];
+    @apply min-h-72 resize-none text-[15px] relative outline-none p-[15px_10px];
     caret-color: rgb(5, 5, 5);
     tab-size: 1;
   }

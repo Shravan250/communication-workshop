@@ -1,17 +1,10 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import {
   $isTextNode,
   DOMConversionMap,
@@ -23,14 +16,17 @@ import {
   LexicalNode,
   ParagraphNode,
   TextNode,
+  EditorState,
+  $getRoot,
 } from "lexical";
+import { useState, useCallback } from "react";
 
 import ExampleTheme from "../ExampleTheme";
 import ToolbarPlugin from "../plugins/ToolbarPlugin";
-import TreeViewPlugin from "../plugins/TreeViewPlugin";
 import { parseAllowedColor, parseAllowedFontSize } from "../styleConfig";
 
-const placeholder = "Enter some rich text...";
+const placeholder =
+  "Begin your creative journey here. This space is designed to inspire clarity and focus. Let your thoughts flow freely. Utilize the formatting tools above to structure your ideas, and the AI-powered actions below to enhance your writing. For instance, try generating a scenario to kickstart a new idea or evaluating your current draft for improvements. Every word crafted here contributes to your calm and productive workflow.";
 
 const removeStylesExportDOM = (
   editor: LexicalEditor,
@@ -38,9 +34,6 @@ const removeStylesExportDOM = (
 ): DOMExportOutput => {
   const output = target.exportDOM(editor);
   if (output && isHTMLElement(output.element)) {
-    // Remove all inline styles and classes if the element is an HTMLElement
-    // Children are checked as well since TextNode can be nested
-    // in i, b, and strong tags.
     for (const el of [
       output.element,
       ...output.element.querySelectorAll("[style],[class]"),
@@ -61,8 +54,6 @@ const exportMap: DOMExportOutputMap = new Map<
 ]);
 
 const getExtraStyles = (element: HTMLElement): string => {
-  // Parse styles from pasted input, but only if they match exactly the
-  // sort of styles that would be produced by exportDOM
   let extraStyles = "";
   const fontSize = parseAllowedFontSize(element.style.fontSize);
   const backgroundColor = parseAllowedColor(element.style.backgroundColor);
@@ -81,9 +72,6 @@ const getExtraStyles = (element: HTMLElement): string => {
 
 const constructImportMap = (): DOMConversionMap => {
   const importMap: DOMConversionMap = {};
-
-  // Wrap all TextNode importers with a function that also imports
-  // the custom styles implemented by the playground
   for (const [tag, fn] of Object.entries(TextNode.importDOM() || {})) {
     importMap[tag] = (importNode) => {
       const importer = fn(importNode);
@@ -121,7 +109,6 @@ const constructImportMap = (): DOMConversionMap => {
       };
     };
   }
-
   return importMap;
 };
 
@@ -130,7 +117,7 @@ const editorConfig = {
     export: exportMap,
     import: constructImportMap(),
   },
-  namespace: "React.js Demo",
+  namespace: "WritingCanvas",
   nodes: [ParagraphNode, TextNode],
   onError(error: Error) {
     throw error;
@@ -138,29 +125,93 @@ const editorConfig = {
   theme: ExampleTheme,
 };
 
-export default function TextEditor() {
+// Word counter component
+function WordCounter({ editorState }: { editorState: EditorState | null }) {
+  if (!editorState) return <span>0 words / 0 characters</span>;
+
+  let wordCount = 0;
+  let charCount = 0;
+
+  editorState.read(() => {
+    const root = $getRoot();
+    const text = root.getTextContent();
+    charCount = text.length;
+    wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  });
+
   return (
-    <LexicalComposer initialConfig={editorConfig}>
-      <div className="editor-container">
-        <ToolbarPlugin />
-        <div className="editor-inner">
-          <RichTextPlugin
-            contentEditable={
-              <ContentEditable
-                className="editor-input"
-                aria-placeholder={placeholder}
-                placeholder={
-                  <div className="editor-placeholder">{placeholder}</div>
+    <span className="text-sm text-gray-600">
+      {wordCount} words / {charCount} characters
+    </span>
+  );
+}
+
+export default function TextEditor() {
+  const [editorState, setEditorState] = useState<EditorState | null>(null);
+  const [autoSaved, setAutoSaved] = useState(false);
+
+  const onChange = useCallback((state: EditorState) => {
+    setEditorState(state);
+    setAutoSaved(true);
+    setTimeout(() => setAutoSaved(false), 2000);
+  }, []);
+
+  return (
+    <div className="py-3">
+      <div className="max-w-full mx-auto">
+        <LexicalComposer initialConfig={editorConfig}>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            {/* Toolbar */}
+            <div className="border-b border-gray-200">
+              <ToolbarPlugin />
+            </div>
+
+            {/* Editor */}
+            <div className="relative">
+              <RichTextPlugin
+                contentEditable={
+                  <ContentEditable
+                    className="min-h-125 px-12 py-8 text-lg leading-relaxed text-gray-900 outline-none focus:outline-none"
+                    aria-placeholder={placeholder}
+                    placeholder={
+                      <div className="absolute top-8 left-12 right-12 text-lg text-gray-400 pointer-events-none">
+                        {placeholder}
+                      </div>
+                    }
+                  />
                 }
+                ErrorBoundary={LexicalErrorBoundary}
               />
-            }
-            ErrorBoundary={LexicalErrorBoundary}
-          />
-          <HistoryPlugin />
-          <AutoFocusPlugin />
-          {/* <TreeViewPlugin /> */}
-        </div>
+              <OnChangePlugin onChange={onChange} />
+              <HistoryPlugin />
+              <AutoFocusPlugin />
+            </div>
+
+            {/* Footer with word count and autosave status */}
+            <div className="flex justify-between items-center px-12 py-4 border-t border-gray-200 bg-gray-50">
+              <WordCounter editorState={editorState} />
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <svg
+                  className={`w-4 h-4 ${
+                    autoSaved ? "text-green-600" : "text-gray-400"
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>Autosaved</span>
+              </div>
+            </div>
+          </div>
+        </LexicalComposer>
       </div>
-    </LexicalComposer>
+    </div>
   );
 }
