@@ -25,6 +25,16 @@ import ExampleTheme from "../ExampleTheme";
 import ToolbarPlugin from "../plugins/ToolbarPlugin";
 import { parseAllowedColor, parseAllowedFontSize } from "../styleConfig";
 
+interface TextEditorProps {
+  minimumWords: number;
+  onContentChange?: (data: {
+    text: string;
+    wordCount: number;
+    isValid: boolean;
+    editorState: EditorState;
+  }) => void;
+}
+
 const placeholder =
   "Begin your creative journey here. This space is designed to inspire clarity and focus. Let your thoughts flow freely. Utilize the formatting tools above to structure your ideas, and the AI-powered actions below to enhance your writing. For instance, try generating a scenario to kickstart a new idea or evaluating your current draft for improvements. Every word crafted here contributes to your calm and productive workflow.";
 
@@ -126,8 +136,20 @@ const editorConfig = {
 };
 
 // Word counter component
-function WordCounter({ editorState }: { editorState: EditorState | null }) {
-  if (!editorState) return <span>0 words / 0 characters</span>;
+function WordCounter({
+  editorState,
+  minimumWords,
+}: {
+  editorState: EditorState | null;
+  minimumWords: number;
+}) {
+  if (!editorState)
+    return (
+      <div className="flex flex-col gap-2">
+        <div>0 words / 0 characters</div>
+        <div>Minimum words: {minimumWords}</div>
+      </div>
+    );
 
   let wordCount = 0;
   let charCount = 0;
@@ -140,21 +162,45 @@ function WordCounter({ editorState }: { editorState: EditorState | null }) {
   });
 
   return (
-    <span className="text-sm text-gray-600">
-      {wordCount} words / {charCount} characters
-    </span>
+    <div className="flex flex-col gap-2 text-sm text-gray-600">
+      <div>
+        {wordCount} words / {charCount} characters
+      </div>
+      <div>Minimum words: {minimumWords}</div>
+    </div>
   );
 }
 
-export default function TextEditor() {
+export default function TextEditor({
+  minimumWords,
+  onContentChange,
+}: TextEditorProps) {
   const [editorState, setEditorState] = useState<EditorState | null>(null);
   const [autoSaved, setAutoSaved] = useState(false);
 
-  const onChange = useCallback((state: EditorState) => {
-    setEditorState(state);
-    setAutoSaved(true);
-    setTimeout(() => setAutoSaved(false), 2000);
-  }, []);
+  const onChange = useCallback(
+    (state: EditorState) => {
+      setEditorState(state);
+      setAutoSaved(true);
+      setTimeout(() => setAutoSaved(false), 2000);
+
+      state.read(() => {
+        const root = $getRoot();
+        const text = root.getTextContent();
+        const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const isValid = wordCount >= minimumWords;
+
+        //Notify
+        onContentChange?.({
+          text,
+          wordCount,
+          isValid,
+          editorState: state,
+        });
+      });
+    },
+    [minimumWords, onContentChange]
+  );
 
   return (
     <div className="py-3">
@@ -189,7 +235,10 @@ export default function TextEditor() {
 
             {/* Footer with word count and autosave status */}
             <div className="flex justify-between items-center px-12 py-4 border-t border-gray-200 bg-gray-50">
-              <WordCounter editorState={editorState} />
+              <WordCounter
+                editorState={editorState}
+                minimumWords={minimumWords}
+              />
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <svg
                   className={`w-4 h-4 ${
