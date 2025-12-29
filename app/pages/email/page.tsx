@@ -10,8 +10,23 @@ import { useEmailPage } from "@/hooks/useEmailPage";
 import { BookCheck, RefreshCw } from "lucide-react";
 
 export default function EmailPage() {
-  const { isCheckAnswerClicked, isFormSubmitted, setIsCheckAnswerClicked } =
-    useEmailPage();
+  const {
+    isCheckAnswerClicked,
+    isFormSubmitted,
+    tone,
+    setIsCheckAnswerClicked,
+    setTone,
+    setForm,
+    setIsFormSubmitted,
+    handleCopy,
+    form,
+    scenario,
+    difficulty,
+    setScenario,
+    setDifficulty,
+    evaluationResponse,
+    setEvaluationResponse,
+  } = useEmailPage();
 
   return (
     <section className="p-8 w-3/4 mx-auto min-h-screen">
@@ -19,27 +34,35 @@ export default function EmailPage() {
         {/* Top Section */}
         <div className="grid grid-cols-[2fr_1fr] gap-6">
           {/* Scenario Card */}
-          <ScenarioCard />
+          <ScenarioCard scenario={scenario} />
 
           {/* Controls Panel */}
-          <ControlsPanel />
+          <ControlsPanel
+            difficulty={difficulty}
+            setScenario={setScenario}
+            setDifficulty={setDifficulty}
+          />
         </div>
 
         {/* Email Composition Form */}
-        <EmailComposition />
+        <EmailComposition
+          form={form}
+          scenario={scenario}
+          setEvaluationResponse={setEvaluationResponse}
+          setForm={setForm}
+          setIsFormSubmitted={setIsFormSubmitted}
+          handleCopy={handleCopy}
+        />
 
         {/* Evaluation Report Card */}
-        <EvaluationReport
-          metrics={{
-            clarity: 4,
-            tone: 4,
-            structure: 4,
-            professionalism: 4,
-          }}
-          highlight="The email is clear and concise."
-          suggestion="Consider adding a more formal greeting."
-          encouragement="Great job overall!"
-        />
+        {isFormSubmitted && (
+          <EvaluationReport
+            metrics={evaluationResponse.metrics}
+            highlight={evaluationResponse.highlight}
+            suggestion={evaluationResponse.suggestion}
+            encouragement={evaluationResponse.encouragement}
+          />
+        )}
 
         {/* Answer Verification & Tone Adjustment Section */}
         {isFormSubmitted && (
@@ -64,7 +87,8 @@ export default function EmailPage() {
                   Relaxed
                 </span>
                 <Slider
-                  defaultValue={[50]}
+                  value={[tone]}
+                  onValueChange={(val) => setTone(val[0])}
                   max={100}
                   step={1}
                   className="flex-1"

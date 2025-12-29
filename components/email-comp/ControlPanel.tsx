@@ -1,24 +1,58 @@
 import { Brain } from "lucide-react";
 import { Button } from "../ui/button";
-import { useEmailPage } from "@/hooks/useEmailPage";
 
-export default function ControlsPanel() {
-  const { difficulty, setScenario, setDifficulty } = useEmailPage();
+interface ControlPanelProps {
+  difficulty: string;
+  setScenario: React.Dispatch<React.SetStateAction<string>>;
+  setDifficulty: React.Dispatch<React.SetStateAction<string>>;
+}
 
-  const handleScenarioGeneration = () => {
-    // Placeholder logic for scenario generation based on difficulty
-    let newScenario = "";
-    if (difficulty === "easy") {
-      newScenario =
-        "You need to send a friendly reminder email to a colleague about an upcoming meeting.";
-    } else if (difficulty === "medium") {
-      newScenario =
-        "You have received an email from your manager asking you to prepare a report on the recent sales performance of your team. The report should include key metrics, analysis of trends, and recommendations for improvement. You need to draft a professional email response acknowledging the request and outlining your plan to complete the report within the given deadline.";
-    } else if (difficulty === "hard") {
-      newScenario =
-        "You have to respond to a client complaint regarding a delayed project delivery. The email should address the client's concerns, provide a clear explanation for the delay, outline the steps being taken to resolve the issue, and offer compensation or reassurance to maintain a positive business relationship.";
+export default function ControlsPanel({
+  difficulty,
+  setScenario,
+  setDifficulty,
+}: ControlPanelProps) {
+  // const { difficulty, setScenario, setDifficulty } = useEmailPage();
+
+  const handleScenarioGeneration = async () => {
+    {
+      /*
+      //Placeholder logic for scenario generation based on difficulty
+      let newScenario = "";
+      if (difficulty === "easy") {
+        newScenario =
+          "You need to send a friendly reminder email to a colleague about an upcoming meeting.";
+      } else if (difficulty === "medium") {
+        newScenario =
+          "You have received an email from your manager asking you to prepare a report on the recent sales performance of your team. The report should include key metrics, analysis of trends, and recommendations for improvement. You need to draft a professional email response acknowledging the request and outlining your plan to complete the report within the given deadline.";
+      } else if (difficulty === "hard") {
+        newScenario =
+          "You have to respond to a client complaint regarding a delayed project delivery. The email should address the client's concerns, provide a clear explanation for the delay, outline the steps being taken to resolve the issue, and offer compensation or reassurance to maintain a positive business relationship.";
+      }
+    */
     }
-    setScenario(newScenario);
+
+    try {
+      const response = await fetch("/api/generate-scenario", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          difficulty,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate scenario");
+      }
+
+      const data = await response.json();
+      console.log(data);
+      setScenario(data.scenario);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (

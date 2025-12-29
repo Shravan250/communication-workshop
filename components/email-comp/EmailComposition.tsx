@@ -3,14 +3,31 @@ import TextEditor from "../TextEditor";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useEmailForm } from "@/hooks/useEmailForm";
-import { useEmailPage } from "@/hooks/useEmailPage";
+import { EvaluationResponse } from "@/app/api/evaluate-email/route";
 
-export default function EmailComposition() {
-  const { setForm } = useEmailPage();
+interface EmailCompositionProps {
+  form: { to: string; subject: string; body: string };
+  scenario: string;
+  setForm: (form: { to: string; subject: string; body: string }) => void;
+  setIsFormSubmitted: (val: boolean) => void;
+  handleCopy: () => void;
+  setEvaluationResponse: React.Dispatch<
+    React.SetStateAction<EvaluationResponse | undefined>
+  >;
+}
+
+export default function EmailComposition({
+  form,
+  scenario,
+  setForm,
+  setIsFormSubmitted,
+  handleCopy,
+  setEvaluationResponse,
+}: EmailCompositionProps) {
   const { isValid, errors, setTo, setSubject, validate, onContentChange } =
     useEmailForm({ minimumWords: 50 });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const validated = validate();
@@ -19,6 +36,30 @@ export default function EmailComposition() {
     console.log("Final validated payload:", validated);
 
     setForm(validated);
+    setIsFormSubmitted(true);
+
+    try {
+      const response = await fetch("/api/evaluate-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          scenario,
+          form,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate scenario");
+      }
+
+      const data = await response.json();
+      console.log(data);
+      setEvaluationResponse(data);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -79,6 +120,7 @@ export default function EmailComposition() {
           <Button
             type="button"
             variant="default"
+            onClick={handleCopy}
             className="bg-gray-400 px-6 py-3 rounded-lg flex items-center gap-2 text-white hover:bg-gray-500"
           >
             <Copy />

@@ -9,7 +9,6 @@ interface EvaluationReportProps {
   suggestion: string;
   encouragement: string;
 }
-
 export default function EvaluationReport({
   metrics,
   highlight,
