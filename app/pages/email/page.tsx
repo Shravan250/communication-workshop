@@ -26,6 +26,8 @@ export default function EmailPage() {
     setDifficulty,
     evaluationResponse,
     setEvaluationResponse,
+    optimizedEmail,
+    getModalAnswer,
   } = useEmailPage();
 
   return (
@@ -72,7 +74,7 @@ export default function EmailPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsCheckAnswerClicked((prev) => !prev)}
+                onClick={() => getModalAnswer()}
                 className="bg-[#1EC964] border-[#89E3AE] min-w-72 px-8 py-5 text-lg rounded-xl text-white flex items-center gap-2 hover:bg-[#1AB557] whitespace-nowrap"
               >
                 {!isCheckAnswerClicked ? <BookCheck /> : <RefreshCw />}
@@ -105,13 +107,16 @@ export default function EmailPage() {
         {isCheckAnswerClicked && isFormSubmitted && (
           <div className="bg-white p-8 rounded-lg">
             <h2 className="text-2xl font-bold mb-4">Detailed Feedback</h2>
-            <p className="text-gray-700 leading-relaxed">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-              euismod, nunc ut laoreet tincidunt, nunc nisl aliquam nunc, eget
-              aliquam nisl nunc vel nisl. Sed euismod, nunc ut laoreet
-              tincidunt, nunc nisl aliquam nunc, eget aliquam nisl nunc vel
-              nisl.
-            </p>
+            <div className="text-gray-700 leading-relaxed">
+              <h3>
+                <span className="font-bold text-black leading-relaxed">
+                  Subject:{" "}
+                </span>
+                {optimizedEmail.subject}
+              </h3>
+              <p style={{ whiteSpace: "pre-line" }}>{optimizedEmail.body}</p>
+              <p>{optimizedEmail.signature}</p>
+            </div>
           </div>
         )}
       </div>

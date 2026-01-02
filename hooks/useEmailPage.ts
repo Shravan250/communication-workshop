@@ -25,10 +25,39 @@ export function useEmailPage() {
       suggestion: "",
       encouragement: "",
     });
+  const [optimizedEmail, setOptimizedEmail] = useState({
+    subject: "",
+    body: "",
+    signature: "",
+  });
 
   const handleCopy = () => {
     const content = `To: ${form.to}\nSubject: ${form.subject}\n\n${form.body}`;
     navigator.clipboard.writeText(content);
+  };
+
+  const getModalAnswer = async () => {
+    const userEmail = form.body;
+    try {
+      const res = await fetch("/api/optimized-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenario, userEmail, tone }),
+      });
+
+      if (!res.ok) throw new Error("Failed to generate optimized email");
+
+      const data = await res.json();
+      console.log(data);
+      setOptimizedEmail(data.optimizedEmail);
+      console.log(optimizedEmail);
+      setIsCheckAnswerClicked(true);
+    } catch (err) {
+      console.error(
+        "Failed to generate optimized email. Please try again.",
+        err
+      );
+    }
   };
 
   return {
@@ -41,6 +70,7 @@ export function useEmailPage() {
     tone,
     form,
     evaluationResponse,
+    optimizedEmail,
 
     //Setters
     setScenario,
@@ -52,5 +82,6 @@ export function useEmailPage() {
 
     //handlers
     handleCopy,
+    getModalAnswer,
   };
 }

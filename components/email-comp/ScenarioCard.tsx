@@ -1,5 +1,3 @@
-import { useEmailPage } from "@/hooks/useEmailPage";
-
 export default function ScenarioCard({ scenario }: { scenario: string }) {
   return (
     <div className="bg-white p-6 rounded-lg">

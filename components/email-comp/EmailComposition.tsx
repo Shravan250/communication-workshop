@@ -12,7 +12,7 @@ interface EmailCompositionProps {
   setIsFormSubmitted: (val: boolean) => void;
   handleCopy: () => void;
   setEvaluationResponse: React.Dispatch<
-    React.SetStateAction<EvaluationResponse | undefined>
+    React.SetStateAction<EvaluationResponse>
   >;
 }
 
@@ -36,7 +36,6 @@ export default function EmailComposition({
     console.log("Final validated payload:", validated);
 
     setForm(validated);
-    setIsFormSubmitted(true);
 
     try {
       const response = await fetch("/api/evaluate-email", {
@@ -57,6 +56,7 @@ export default function EmailComposition({
       const data = await response.json();
       console.log(data);
       setEvaluationResponse(data);
+      setIsFormSubmitted(true);
     } catch (e) {
       console.error(e);
     }
